@@ -1,12 +1,11 @@
 # Todo List Solana Program
 
-A Solana on-chain todo list program built with Anchor. This program allows users to create, complete, and delete todos on the Solana blockchain.
+A Solana on-chain todo list program built with Anchor. This program allows users to create and complete todos on the Solana blockchain.
 
 ## Features
 
-- Create a new todo with title, description, and status
-- Mark a todo as completed
-- Delete a todo
+- Create a new todo with title and description
+- Mark a todo as completed (which also deletes it)
 - All todos are stored on-chain and associated with the user's wallet
 
 ## Prerequisites
@@ -61,7 +60,6 @@ This will:
        ctx: Context<CreateTodo>,
        title: String,
        description: String,
-       status: Status,
    ) -> Result<()>
    ```
 
@@ -70,27 +68,46 @@ This will:
    pub fn complete_todo(ctx: Context<CompleteTodo>) -> Result<()>
    ```
 
-3. **Delete a Todo**
-   ```rust
-   pub fn delete_todo(ctx: Context<DeleteTodo>) -> Result<()>
-   ```
-
 ### Account Structures
 
 #### Todo Account
 ```rust
 pub struct Todo {
-    pub authority: Pubkey,
-    pub title: String,       // Max 50 chars
+    pub authority: Pubkey,    // The owner of the todo
+    pub title: String,        // Max 50 chars
     pub description: String,  // Max 50 chars
-    pub status: Status,
-    pub bump: u8,
+    pub bump: u8,            // Bump seed for the PDA
 }
+```
 
-pub enum Status {
-    Started,
-    UnStarted,
-    Finished,
+#### CreateTodo Context
+```rust
+pub struct CreateTodo<'info> {
+    pub authority: Signer<'info>,
+    #[account(
+        init,
+        space = 8 + Todo::INIT_SPACE,
+        payer = authority,
+        seeds = [b"todo", authority.key().as_ref(), title.as_bytes()],
+        bump
+    )]
+    pub todo: Account<'info, Todo>,
+    pub system_program: Program<'info, System>,
+}
+```
+
+#### CompleteTodo Context
+```rust
+pub struct CompleteTodo<'info> {
+    pub authority: Signer<'info>,
+    #[account(
+        mut,
+        seeds = [b"todo", authority.key().as_ref(), todo.title.as_bytes()],
+        bump = todo.bump,
+        has_one = authority,
+        close = authority
+    )]
+    pub todo: Account<'info, Todo>,
 }
 ```
 
