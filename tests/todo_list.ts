@@ -23,7 +23,7 @@ describe("Todo List Program", () => {
     const [todoPDA] = createPDA(title);
 
     await program.methods
-      .createTodo(title, description, { started: {} })
+      .createTodo(title, description)
       .accounts({
         todo: todoPDA,
         authority: wallet.publicKey,
@@ -33,18 +33,6 @@ describe("Todo List Program", () => {
 
     return { todoPDA };
   };
-
-  const deleteTodo = async (title: string) => {
-    const [todoPDA] = createPDA(title);
-    return await program.methods
-      .deleteTodo()
-      .accounts({
-        todo: todoPDA,
-        authority: wallet.publicKey,
-      })
-      .signers([])
-      .rpc();
-  }
 
   const markComplete = async (title: string) => {
     const [todoPDA] = createPDA(title);
@@ -71,34 +59,22 @@ describe("Todo List Program", () => {
       // Verify the todo was created with the correct data
       expect(todoAccount.title).to.equal(title);
       expect(todoAccount.description).to.equal(description);
-      expect(todoAccount.status).to.deep.equal({ started: {} });
       expect(todoAccount.authority.equals(wallet.publicKey)).to.be.true;
     });
   });
 
-  describe("completeTodo", () => {
-    it("should complete a todo", async () => {
+  describe("mark todo complete", () => {
+    it("should mark a todo as complete", async () => {
       const title = "complete-test";
-      const {todoPDA} = await createTodo(title, "Todo to complete");
-      await markComplete(title);
+      const { todoPDA } = await createTodo(title, "Todo to complete");
 
-      const todoAccount = await program.account.todo.fetch(todoPDA);
-      expect(todoAccount.status).to.deep.equal({ finished: {} });
-    });
-  });
-
-  describe("deleteTodo", () => {
-    it("should delete a todo", async () => {
-      const title = "delete-test";
-      const { todoPDA } = await createTodo(title, "Todo to delete");
-      
       // Verify the todo exists before deletion
       let todoAccount = await program.account.todo.fetch(todoPDA);
       expect(todoAccount.title).to.equal(title);
-      
-      // Delete the todo
-      await deleteTodo(title);
-      
+
+      // Mark the todo as complete
+      await markComplete(title);
+
       // Verify the todo account no longer exists
       try {
         await program.account.todo.fetch(todoPDA);

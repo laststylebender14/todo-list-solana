@@ -10,22 +10,15 @@ pub mod todo_list {
         ctx: Context<CreateTodo>,
         title: String,
         description: String,
-        status: Status,
     ) -> Result<()> {
         ctx.accounts.todo.authority = ctx.accounts.authority.key();
         ctx.accounts.todo.title = title;
         ctx.accounts.todo.description = description;
-        ctx.accounts.todo.status = status;
         ctx.accounts.todo.bump = ctx.bumps.todo;
         Ok(())
     }
 
-    pub fn complete_todo(ctx: Context<CompleteTodo>) -> Result<()> {
-        ctx.accounts.todo.status = Status::Finished;
-        Ok(())
-    }
-
-    pub fn delete_todo(_ctx: Context<DeleteTodo>) -> Result<()> {
+    pub fn complete_todo(_ctx: Context<CompleteTodo>) -> Result<()> {
         Ok(())
     }
 }
@@ -44,14 +37,6 @@ pub struct CreateTodo<'info> {
 pub struct CompleteTodo<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut, seeds=[b"todo", authority.key().as_ref(), todo.title.as_bytes()], bump=todo.bump, has_one=authority)]
-    pub todo: Account<'info, Todo>,
-}
-
-#[derive(Accounts)]
-pub struct DeleteTodo<'info> {
-    #[account(mut)]
-    pub authority: Signer<'info>,
     #[account(mut, seeds=[b"todo", authority.key().as_ref(), todo.title.as_bytes()], bump=todo.bump, has_one=authority, close=authority)]
     pub todo: Account<'info, Todo>,
 }
@@ -64,13 +49,5 @@ pub struct Todo {
     pub title: String,
     #[max_len(50)]
     pub description: String,
-    pub status: Status,
     pub bump: u8,
-}
-
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, InitSpace)]
-pub enum Status {
-    Started,
-    UnStarted,
-    Finished,
 }
